@@ -45,7 +45,8 @@ class Lending:
                     for fee in range(0, self.fee):
                         dicFee[fee + 1] = {'value': val, 'status': False}
 
-                    dicLending[self.idUser] = dicFee
+                    id = is_number('Digite el numero del prestamo: ')
+                    dicLending[id] = {'idUser': self.idUser, 'lending': dicFee}
                 else:
                     print('La persona solicitante no esta registrada')
         self.userExist = False
@@ -56,9 +57,9 @@ class Pay:
     selection = 0
     arrayFee = []
     pay = False
+    userExist = False
 
     def pay_fee(self):
-
         if not dicUser:
             print('No hay usuarios registrados')
         else:
@@ -68,36 +69,52 @@ class Pay:
             else:
 
                 self.idUser = is_number('Digite el documento de la persona que realizara el pago: ')
-
+                arrFee = []
                 for lending in dicLending:
+                    if dicLending[lending]['idUser'] == self.idUser:
+                        print('Codigo de prestamo N° {}'.format(lending))
+                        self.userExist = True
+                        arrFee.append(lending)
 
-                    if lending == self.idUser:
+                if self.userExist:
 
-                        for fee in dicLending[lending]:
+                    lenExist = False
+                    len = 0
+                    while not lenExist:
+                        len = is_number('Ingrese el codigo del prestamo que desea cancelar: ')
+                        for l in arrFee:
+                            if len == l:
+                                lenExist = True
 
-                            if not dicLending[lending][fee]['status']:
-                                self.pay = True
-                                self.arrayFee.append(fee)
-                                print('Cuota sin pagar numero {} por un valor de {} '
-                                      .format(fee, dicLending[lending][fee]['value']))
+                    for diclen in dicLending[len]['lending']:
 
-        if self.pay:
+                        if not dicLending[len]['lending'][diclen]['status']:
 
-            paid = False
+                            yesNo = False
+                            while not yesNo:
+                                question = input('Desea realmente pagar esta cuota? y/n: ')
+                                if question == 'y':
+                                    dicLending[len]['lending'][diclen]['status'] = True
+                                    print('El pago se realizo con exito :)')
+                                    yesNo = True
 
-            while not paid:
+                                elif question == 'n':
+                                    print('El pago fue cancelado :( ')
+                                    yesNo = True
 
-                numFee = is_number('Digite el numero de la cuota que desea pagar: ')
-
-                for nF in self.arrayFee:
-                    if nF == numFee:
-                        dicLending[self.idUser][numFee]['status'] = True
-                        paid = True
+                                else:
+                                    yesNo = False
+                            break
+                else:
+                    print('El usuario no tiene deudas pendientes')
         self.pay = False
+        self.userExist = False
 
 
 class Report:
     idUser = 0
+    feeExist = False
+    paidExiste = False
 
     def paid_fees(self):
         if not dicUser:
@@ -107,26 +124,74 @@ class Report:
                 print('No hay prestamos registrados')
             else:
                 self.idUser = is_number('Digite el numero de documento: ')
+                arr = []
+
                 if dicUser[self.idUser]:
-                    if dicLending[self.idUser]:
-                        totalPaid = 0
-                        value = 0
-                        pay = 0
-                        for fee in dicLending[self.idUser]:
-                            if dicLending[self.idUser][fee]['status']:
-                                totalPaid = totalPaid + 1
-                                pay = dicLending[self.idUser][fee]['value']
-                                value = value + dicLending[self.idUser][fee]['value']
-                        print("""
-                        Usted a pagado {} cuotas por un valor de {} 
-                        que suma un total de {}
-                        """.format(totalPaid, pay, value))
 
-                    else:
-                        print('Este usuario no ha solicitado prestamos')
+                    for lend in dicLending:
 
+                        if dicLending[lend]['idUser'] == self.idUser:
+                            arr.append(lend)
+                            self.feeExist = True
+
+                            print('Codigo del prestamo N° {} que desea mirar '.format(lend))
+
+                if self.feeExist:
+
+                    cp = is_number('Seleccione el codigo del prestamo que desea mirar la informacion')
+
+                    totalPaid = 0
+                    valuePaid = 0
+
+                    for cod in arr:
+                        if cod == cp:
+                            for i in dicLending[cp]['lending']:
+                                if dicLending[cp]['lending'][i]['status']:
+                                    totalPaid = totalPaid + 1
+                                    valuePaid = valuePaid + dicLending[cp]['lending'][i]['value']
+                    print("""
+                    usted a pagado un total de {} cuotas para un valor total de {} pagados                
+                    """.format(totalPaid, valuePaid))
                 else:
-                    print('Este usuario no se encuentra registrado')
+                    print('No hay datos para mostrar')
+        self.feeExist = False
+
+    def un_paid_fees(self):
+        if not dicUser:
+            print('No existen usuarios registrados en el sistema')
+        else:
+            if not dicLending:
+                print('No hay prestamos registrados')
+            else:
+                self.idUser = is_number('Digite el numero de documento: ')
+                arr = []
+
+                if dicUser[self.idUser]:
+
+                    for lend in dicLending:
+
+                        if dicLending[lend]['idUser'] == self.idUser:
+                            arr.append(lend)
+                            print('Codigo del prestamo N° {} que desea mirar '.format(lend))
+                            self.paidExiste = True
+
+                if self.paidExiste:
+                    cp = is_number('Seleccione el codigo del prestamo que desea mirar la informacion')
+
+                    totalPaid = 0
+                    valuePaid = 0
+                    for cod in arr:
+                        if cod == cp:
+                            for i in dicLending[cp]['lending']:
+                                if not dicLending[cp]['lending'][i]['status']:
+                                    totalPaid = totalPaid + 1
+                                    valuePaid = valuePaid + dicLending[cp]['lending'][i]['value']
+                    print("""
+                    usted deve un total de {} cuotas para un valor total de {} en deuda                
+                    """.format(totalPaid, valuePaid))
+                else:
+                    print('No hay datos para mostrar')
+        self.paidExiste = False
 
 
 class User(Lending, Pay, Report):
@@ -143,11 +208,44 @@ class User(Lending, Pay, Report):
         dicUser[self.document] = {'name': self.name, 'lastName': self.lastName, 'address': self.address}
 
 
+def menu():
+    print("""
+    [1] Crear usuario
+    [2] Pedir prestamo
+    [3] Pagar un prestamo
+    [4] Mostrar el listado de cuotas pagadas del prestamo por usuario
+    [5] Mostrar el listado de cuotas pendientes por pagar del prestamo de un usuario
+    [6] Salir    
+    """)
+    optionSelected = is_number("Select an option: ")
+    return optionSelected
+
+
 user = User()
-user.create_user()
-user.create_lending()
-user.pay_fee()
-user.pay_fee()
-user.pay_fee()
-user.paid_fees()
-print(mainDic)
+optionSelected = menu()
+while 0 < optionSelected <= 6:
+
+    if optionSelected == 1:
+        user.create_user()
+
+    elif optionSelected == 2:
+        user.create_lending()
+
+    elif optionSelected == 3:
+        user.pay_fee()
+
+    elif optionSelected == 4:
+        user.paid_fees()
+
+    elif optionSelected == 5:
+        user.un_paid_fees()
+
+    elif optionSelected == 6:
+        exit()
+
+    optionSelected = menu()
+
+print("Error this option does not exist")
+for n in range(0, 3, 1):
+    print("Bye...")
+print(' _____________ ')
